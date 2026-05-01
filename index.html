@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reconhecimento de Padrões com IA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --border: #2a2a2a;
+      --accent: #00ff88;
+      --accent2: #ff3cac;
+      --text: #e8e8e8;
+      --muted: #666;
+      --card: #1a1a1a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* --- GRID NOISE BACKGROUND --- */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* --- HEADER --- */
+    header {
+      position: relative;
+      z-index: 1;
+      padding: 48px 40px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .logo-tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -1px;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .header-badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      letter-spacing: 2px;
+    }
+
+    /* --- MAIN LAYOUT --- */
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+      display: grid;
+      gap: 32px;
+    }
+
+    /* --- INTRO SECTION --- */
+    .intro {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 680px) {
+      .intro { grid-template-columns: 1fr; }
+    }
+
+    .intro-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 28px;
+    }
+
+    .intro-card h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      color: var(--accent);
+    }
+
+    .intro-card p {
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: #aaa;
+    }
+
+    /* --- WEBCAM SECTION --- */
+    .webcam-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 36px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .section-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 3px 8px;
+      letter-spacing: 2px;
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .webcam-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    @media (max-width: 680px) {
+      .webcam-inner { grid-template-columns: 1fr; }
+    }
+
+    .camera-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    #webcam-container {
+      width: 100%;
+      max-width: 300px;
+      aspect-ratio: 1;
+      background: #000;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #webcam-container canvas {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover;
+    }
+
+    .camera-placeholder {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    /* --- BUTTON --- */
+    #start-btn {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 14px 32px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    #start-btn:hover { background: #00e87a; }
+    #start-btn:active { transform: scale(0.98); }
+    #start-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+    /* --- RESULTS --- */
+    .results-area {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .results-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    #label-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .prediction-row {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .prediction-label-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .bar-track {
+      height: 6px;
+      background: var(--border);
+      width: 100%;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.2s ease;
+    }
+
+    .bar-fill.secondary { background: var(--accent2); }
+
+    /* --- STATUS --- */
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      margin-right: 8px;
+      transition: background 0.3s;
+    }
+    .status-dot.active { background: var(--accent); animation: pulse 1.5s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    #status-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+    }
+
+    /* --- INFO BOX --- */
+    .info-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      padding: 20px 24px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .info-box strong {
+      color: var(--accent);
+    }
+
+    /* --- FOOTER --- */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 24px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    footer p {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <p class="logo-tag">// Aula 05 — IA Aplicada</p>
+      <h1>Reconhecimento<br>de <span>Padrões</span></h1>
+    </div>
+    <span class="header-badge">TEACHABLE MACHINE</span>
+  </header>
+
+  <main>
+
+    <div class="intro">
+      <div class="intro-card">
+        <h2>Sobre o Projeto</h2>
+        <p>Esta página integra um modelo de reconhecimento de imagens treinado com o <strong style="color:var(--text)">Google Teachable Machine</strong> diretamente no navegador, sem necessidade de servidor.</p>
+      </div>
+      <div class="intro-card">
+        <h2>Como funciona</h2>
+        <p>O modelo é carregado via <strong style="color:var(--text)">TensorFlow.js</strong>. A câmera captura frames em tempo real e o modelo classifica o padrão identificado com sua probabilidade.</p>
+      </div>
+    </div>
+
+    <div class="webcam-section">
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <span class="section-title">Classificador em Tempo Real</span>
+      </div>
+
+      <div class="webcam-inner">
+        <div class="camera-area">
+          <div id="webcam-container">
+            <div class="camera-placeholder">
+              CÂMERA<br>AGUARDANDO<br>INICIALIZAÇÃO
+            </div>
+          </div>
+          <button id="start-btn" onclick="init()">▶ INICIAR CÂMERA</button>
+          <div>
+            <span class="status-dot" id="status-dot"></span>
+            <span id="status-text">AGUARDANDO</span>
+          </div>
+        </div>
+
+        <div class="results-area">
+          <p class="results-label">// Predições do modelo</p>
+          <div id="label-container">
+            <p style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);">
+              Inicie a câmera para ver os resultados.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <strong>NOTA TÉCNICA</strong> — Para utilizar sua própria versão deste projeto, substitua a variável
+      <strong>URL</strong> no script abaixo pelo endereço gerado ao exportar seu modelo no Teachable Machine
+      (<strong>Compartilhar → Upload do modelo</strong>). O modelo é carregado diretamente da nuvem do Google.
+    </div>
+
+  </main>
+
+  <footer>
+    <p>© 2025 — Programação Assistida com IA</p>
+    <p>Publicado via <a href="https://pages.github.com" target="_blank">GitHub Pages</a></p>
+  </footer>
+
+  <!-- Teachable Machine + TF.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+  <script>
+    // =====================================================================
+    // SUBSTITUA A URL ABAIXO PELA URL DO SEU MODELO EXPORTADO NO TEACHABLE
+    // Exemplo: "https://teachablemachine.withgoogle.com/models/XXXXXXXX/"
+    // =====================================================================
+    const URL = "https://teachablemachine.withgoogle.com/models/EXEMPLO/";
+
+    let model, webcam, labelContainer, maxPredictions;
+
+    async function init() {
+      const btn = document.getElementById("start-btn");
+      const statusDot = document.getElementById("status-dot");
+      const statusText = document.getElementById("status-text");
+
+      btn.disabled = true;
+      btn.textContent = "CARREGANDO...";
+      statusText.textContent = "CARREGANDO MODELO";
+
+      try {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        const flip = true;
+        webcam = new tmImage.Webcam(300, 300, flip);
+        await webcam.setup();
+        await webcam.play();
+
+        document.getElementById("webcam-container").innerHTML = "";
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+
+        labelContainer = document.getElementById("label-container");
+        labelContainer.innerHTML = "";
+
+        const colors = ["bar-fill", "bar-fill secondary"];
+        for (let i = 0; i < maxPredictions; i++) {
+          const row = document.createElement("div");
+          row.className = "prediction-row";
+          row.innerHTML = `
+            <div class="prediction-label-text">
+              <span class="pred-name">—</span>
+              <span class="pred-val">0%</span>
+            </div>
+            <div class="bar-track">
+              <div class="${colors[i % colors.length]}" style="width:0%"></div>
+            </div>`;
+          labelContainer.appendChild(row);
+        }
+
+        statusDot.classList.add("active");
+        statusText.textContent = "MODELO ATIVO";
+        btn.textContent = "▶ RODANDO";
+
+        window.requestAnimationFrame(loop);
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = "▶ INICIAR CÂMERA";
+        statusText.textContent = "ERRO — VERIFIQUE A URL DO MODELO";
+        console.error(e);
+      }
+    }
+
+    async function loop() {
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      const prediction = await model.predict(webcam.canvas);
+      const rows = labelContainer.querySelectorAll(".prediction-row");
+
+      for (let i = 0; i < maxPredictions; i++) {
+        const prob = (prediction[i].probability * 100).toFixed(1);
+        const name = prediction[i].className;
+        rows[i].querySelector(".pred-name").textContent = name;
+        rows[i].querySelector(".pred-val").textContent = prob + "%";
+        rows[i].querySelector(".bar-fill, .bar-fill.secondary").style.width = prob + "%";
+      }
+    }
+  </script>
+
+</body>
+</html>
